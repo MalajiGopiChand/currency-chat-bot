@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en" class="transition duration-300">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Currency Exchange Chatbot</title>
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+    };
+  </script>
+</head>
+<body class="bg-gradient-to-br from-blue-100 to-purple-200 dark:from-gray-900 dark:to-gray-800 transition-all duration-500">
+
+  <div class="max-w-3xl mx-auto mt-16 p-8 bg-white dark:bg-gray-900 rounded-xl shadow-xl">
+    <div class="flex justify-between items-center mb-6">
+      <h1 class="text-2xl font-bold text-gray-800 dark:text-white">💱 Currency Exchange Chatbot</h1>
+      <button id="toggleTheme" class="px-4 py-2 bg-gray-800 text-white dark:bg-yellow-300 dark:text-black rounded-md transition">
+        Toggle Dark Mode
+      </button>
+    </div>
+
+    <div id="chatOutput" class="h-64 overflow-y-auto p-4 bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-100 rounded-md mb-4">
+      <!-- Chat output appears here -->
+    </div>
+
+    <div class="flex flex-col md:flex-row md:items-center md:space-x-4 space-y-4 md:space-y-0">
+      <div class="flex flex-col w-full">
+        <label for="fromCurrency" class="text-sm text-gray-700 dark:text-gray-300 mb-1">From:</label>
+        <select id="fromCurrency" class="p-2 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-white">
+          <option value="USD">USD</option>
+          <option value="EUR">EUR</option>
+          <option value="GBP">GBP</option>
+          <option value="INR">INR</option>
+          <option value="JPY">JPY</option>
+          <option value="AUD">AUD</option>
+          <option value="custom">Custom Currency</option>
+        </select>
+        <input type="text" id="customFromCurrency" placeholder="Enter custom currency" class="mt-2 p-2 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-white hidden" />
+      </div>
+
+      <div class="flex flex-col w-full">
+        <label for="toCurrency" class="text-sm text-gray-700 dark:text-gray-300 mb-1">To:</label>
+        <select id="toCurrency" class="p-2 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-white">
+          <option value="USD">USD</option>
+          <option value="EUR">EUR</option>
+          <option value="GBP">GBP</option>
+          <option value="INR">INR</option>
+          <option value="JPY">JPY</option>
+          <option value="AUD">AUD</option>
+          <option value="custom">Custom Currency</option>
+        </select>
+        <input type="text" id="customToCurrency" placeholder="Enter custom currency" class="mt-2 p-2 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-white hidden" />
+      </div>
+
+      <div class="flex flex-col w-full">
+        <label for="amount" class="text-sm text-gray-700 dark:text-gray-300 mb-1">Amount:</label>
+        <input type="number" id="amount" placeholder="Enter amount" class="p-2 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-white" />
+      </div>
+
+      <div class="mt-2 md:mt-6 w-full">
+        <button onclick="fetchExchangeRate()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold p-3 rounded-md transition">
+          Convert
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API_KEY = '2b4b5d39f6ef04a7cf3353f9'; // Replace with your actual API key
+    const BASE_URL = 'https://v6.exchangerate-api.com/v6';
+
+    // Show/hide custom currency input
+    document.getElementById('fromCurrency').addEventListener('change', function () {
+      document.getElementById('customFromCurrency').style.display = this.value === 'custom' ? 'block' : 'none';
+    });
+
+    document.getElementById('toCurrency').addEventListener('change', function () {
+      document.getElementById('customToCurrency').style.display = this.value === 'custom' ? 'block' : 'none';
+    });
+
+    // Dark mode toggle
+    document.getElementById('toggleTheme').addEventListener('click', () => {
+      document.documentElement.classList.toggle('dark');
+    });
+
+    // Fetch exchange rate
+    async function fetchExchangeRate() {
+      const fromCurrency = document.getElementById('fromCurrency').value === 'custom'
+        ? document.getElementById('customFromCurrency').value.toUpperCase()
+        : document.getElementById('fromCurrency').value;
+
+      const toCurrency = document.getElementById('toCurrency').value === 'custom'
+        ? document.getElementById('customToCurrency').value.toUpperCase()
+        : document.getElementById('toCurrency').value;
+
+      const amount = document.getElementById('amount').value;
+      const chatOutput = document.getElementById('chatOutput');
+
+      if (!amount || isNaN(amount) || amount <= 0) {
+        chatOutput.innerHTML += `<p class="text-red-500">⚠️ Please enter a valid amount.</p>`;
+        return;
+      }
+
+      if (!fromCurrency || !toCurrency) {
+        chatOutput.innerHTML += `<p class="text-red-500">⚠️ Please enter valid currencies.</p>`;
+        return;
+      }
+
+      try {
+        const apiUrl = `${BASE_URL}/${API_KEY}/latest/${fromCurrency}`;
+        const response = await fetch(apiUrl);
+
+        if (!response.ok) throw new Error('Failed to fetch exchange rate.');
+
+        const data = await response.json();
+        const rate = data.conversion_rates[toCurrency];
+
+        if (rate) {
+          const convertedAmount = (amount * rate).toFixed(2);
+          chatOutput.innerHTML += `<p>💱 <strong>${amount} ${fromCurrency}</strong> = <strong>${convertedAmount} ${toCurrency}</strong></p>`;
+        } else {
+          chatOutput.innerHTML += `<p class="text-yellow-600">❗ Conversion rate for ${toCurrency} not available.</p>`;
+        }
+
+        chatOutput.scrollTop = chatOutput.scrollHeight;
+      } catch (error) {
+        chatOutput.innerHTML += `<p class="text-red-600">❌ Error: ${error.message}</p>`;
+      }
+    }
+  </script>
+</body>
+</html>
